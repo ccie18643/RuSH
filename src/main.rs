@@ -1,44 +1,47 @@
-use std::env::current_dir;
+use std::env;
 use std::io;
-use std::io::stdin;
 use std::io::Write;
-use std::process::Command;
+use std::process;
 
-fn parse_command_line(command_line: String) -> (String, Vec<String>) {
-    let mut tokens = command_line.trim().split_whitespace();
-    let command = match tokens.next() {
-        Some(command) => command.to_string(),
+fn parse_command(command: String) -> (String, Vec<String>) {
+    let mut tokens = command.split_whitespace();
+    let cmd = match tokens.next() {
+        Some(cmd) => cmd.to_string(),
         None => String::new(),
     };
-    let arguments = tokens.map(|t| t.to_string()).collect();
-    (command, arguments)
+    let args = tokens.map(|t| t.to_string()).collect();
+    (cmd, args)
 }
 
 fn print_command_prompt() {
-    let current_dir = current_dir().unwrap();
+    let current_dir = env::current_dir().unwrap();
     print!("[{}]$ ", current_dir.display());
     io::stdout().flush().unwrap();
 }
 
-fn execute_external_command(command: String, arguments: Vec<String>) {
-    let mut child = Command::new(command).args(arguments).spawn().unwrap();
+fn execute_external_command(cmd: String, args: Vec<String>) {
+    let mut child = process::Command::new(cmd).args(args).spawn().unwrap();
     child.wait().unwrap();
 }
 
 fn main() {
+    println!("\n*** Entering RuSH world *** \n");
+
     loop {
         print_command_prompt();
-        let mut command_line = String::new();
-        stdin().read_line(&mut command_line).unwrap();
-        if command_line.trim().is_empty() {
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        if input.trim().is_empty() {
             continue;
         }
 
-        let (command, arguments) = parse_command_line(command_line);
+        let (cmd, args) = parse_command(input);
 
-        match command.as_str() {
-            "exit" => return,
-            _ => execute_external_command(command, arguments),
+        match cmd.as_str() {
+            "exit" => break,
+            _ => execute_external_command(cmd, args),
         }
     }
+
+    println!("\n*** Exiting RuSH world *** \n");
 }
